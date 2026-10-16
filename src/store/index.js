@@ -15,141 +15,117 @@ export const mainStore = defineStore("mainData", {
           show: true,
         },
         {
-          label: "微博",
-          name: "weibo",
-          order: 1,
-          show: true,
-        },
-        {
           label: "抖音",
           name: "douyin",
-          order: 2,
+          order: 1,
           show: true,
         },
         {
           label: "知乎",
           name: "zhihu",
-          order: 3,
+          order: 2,
           show: true,
         },
         {
           label: "36氪",
           name: "36kr",
-          order: 4,
-          show: true,
-        },
-        {
-          label: "百度",
-          name: "baidu",
-          order: 5,
+          order: 3,
           show: true,
         },
         {
           label: "少数派",
           name: "sspai",
-          order: 6,
+          order: 4,
           show: true,
         },
         {
           label: "IT之家",
           name: "ithome",
-          order: 7,
+          order: 5,
           show: true,
         },
         {
           label: "澎湃新闻",
           name: "thepaper",
-          order: 8,
+          order: 6,
           show: true,
         },
         {
           label: "今日头条",
           name: "toutiao",
-          order: 9,
-          show: true,
-        },
-        {
-          label: "百度贴吧",
-          name: "tieba",
-          order: 10,
+          order: 7,
           show: true,
         },
         {
           label: "稀土掘金",
           name: "juejin",
-          order: 11,
+          order: 8,
           show: true,
         },
         {
           label: "腾讯新闻",
           name: "qq-news",
-          order: 12,
+          order: 9,
           show: true,
         },
         {
           label: "豆瓣电影",
           name: "douban-movie",
-          order: 13,
+          order: 10,
           show: true,
         },
         {
           label: "原神",
           name: "genshin",
-          order: 14,
+          order: 11,
           show: true,
         },
         {
           label: "崩坏：星穹铁道",
           name: "starrail",
-          order: 16,
-          show: true,
-        },
-        {
-          label: "LOL",
-          name: "lol",
-          order: 15,
+          order: 12,
           show: true,
         },
         {
           label: "网易新闻",
           name: "netease-news",
-          order: 17,
+          order: 13,
           show: true,
         },
         {
           label: "微信读书",
           name: "weread",
-          order: 18,
+          order: 14,
           show: true,
         },
         {
           label: "豆瓣讨论小组",
           name: "douban-group",
-          order: 19,
+          order: 15,
           show: true,
         },
         {
           label: "NGA",
           name: "ngabbs",
-          order: 20,
+          order: 16,
           show: true,
         },
         {
           label: "HelloGitHub",
           name: "hellogithub",
-          order: 21,
+          order: 17,
           show: true,
         },
         {
           label: "简书",
           name: "jianshu",
-          order: 22,
+          order: 18,
           show: true,
         },
         {
           label: "知乎日报",
           name: "zhihu-daily",
-          order: 23,
+          order: 19,
           show: true,
         },
       ],
@@ -182,6 +158,10 @@ export const mainStore = defineStore("mainData", {
       console.log("列表尝试更新", this.defaultNewsArr, this.newsArr);
       // 执行比较并迁移
       if (this.newsArr.length > 0) {
+        // 过滤掉已移除的分类
+        this.newsArr = this.newsArr.filter((news) =>
+          this.defaultNewsArr.some((item) => item.name === news.name)
+        );
         for (const newItem of this.defaultNewsArr) {
           const exists = this.newsArr.some(
             (news) => newItem.label === news.label && newItem.name === news.name

@@ -131,7 +131,10 @@ const store = mainStore();
 
 const updateTime = ref(null);
 const listType = ref(
-  router.currentRoute.value.query.type || store.newsArr[0].name
+  store.newsArr.find((item) => item.name === router.currentRoute.value.query.type)
+    ?.name ||
+    store.newsArr[0]?.name ||
+    store.defaultNewsArr[0]?.name
 );
 const pageNumber = ref(
   router.currentRoute.value.query.page
@@ -143,7 +146,11 @@ const listData = ref(null);
 // 获取热榜数据
 const getHotListsData = async (name, isNew = false) => {
   listData.value = null;
-  const item = store.newsArr.find((item) => item.name == name)
+  const item = store.newsArr.find((item) => item.name == name);
+  if (!item) {
+    $message.error("该分类不存在或已被移除");
+    return;
+  }
   getHotLists(item.name, isNew, item.params).then((res) => {
     console.log(res);
     if (res.code === 200) {
