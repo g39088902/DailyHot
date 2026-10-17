@@ -17,6 +17,15 @@ const routes = [
     },
     component: () => import("@/views/List.vue"),
   },
+  // 聚合总览
+  {
+    path: "/stream",
+    name: "stream",
+    meta: {
+      title: "全网聚合",
+    },
+    component: () => import("@/views/Stream.vue"),
+  },
   // 设置页
   {
     path: "/setting",

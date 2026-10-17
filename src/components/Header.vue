@@ -58,6 +58,21 @@
           </n-popover>
           <n-popover>
             <template #trigger>
+              <n-button
+                secondary
+                strong
+                round
+                @click="router.push('/stream')"
+              >
+                <template #icon>
+                  <n-icon :component="ViewList" />
+                </template>
+              </n-button>
+            </template>
+            全网聚合
+          </n-popover>
+          <n-popover>
+            <template #trigger>
               <n-button secondary strong round @click="router.push('/setting')">
                 <template #icon>
                   <n-icon :component="SettingTwo" />
@@ -94,6 +109,7 @@ import {
   Refresh,
   SettingTwo,
   HamburgerButton,
+  ViewList,
 } from "@icon-park/vue-next";
 import { getCurrentTime } from "@/utils/getTime.js";
 import { mainStore } from "@/store";
@@ -174,6 +190,15 @@ const menuOptions = [
     },
   },
   {
+    label: "全网聚合",
+    key: "stream",
+    icon: () => {
+      return h(NIcon, null, {
+        default: () => h(ViewList),
+      });
+    },
+  },
+  {
     label: "全局设置",
     key: "setting",
     icon: () => {
@@ -190,6 +215,8 @@ const menuOptionsSelect = (val) => {
     router.go(0);
   } else if (val === "changeTheme") {
     store.setSiteTheme(store.siteTheme === "light" ? "dark" : "light");
+  } else if (val === "stream") {
+    router.push("/stream");
   } else if (val === "setting") {
     router.push("/setting");
   }

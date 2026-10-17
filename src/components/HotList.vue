@@ -232,12 +232,19 @@ const toList = () => {
   }
 };
 
+let observer = null;
+
 // 判断列表是否显示
 const checkListShow = () => {
+  if (hotListData.value || listLoading.value) return;
   const typeName = props.hotData.name;
   const listId = "hot-list-" + typeName;
   const listDom = document.getElementById(listId);
-  const observer = new IntersectionObserver((entries) => {
+  if (!listDom) return;
+  if (observer) {
+    observer.disconnect();
+  }
+  observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
         console.log(`👀 ${typeName} 可见，开始加载`);
@@ -248,6 +255,18 @@ const checkListShow = () => {
   });
   observer.observe(listDom);
 };
+
+// 监听信源变化
+watch(
+  () => props.hotData.name,
+  () => {
+    hotListData.value = null;
+    loadingError.value = false;
+    nextTick(() => {
+      checkListShow();
+    });
+  }
+);
 
 // 实时改变更新时间
 watch(
@@ -260,7 +279,21 @@ watch(
 );
 
 onMounted(() => {
-  checkListShow();
+  nextTick(() => {
+    checkListShow();
+  });
+});
+
+onActivated(() => {
+  nextTick(() => {
+    checkListShow();
+  });
+});
+
+onBeforeUnmount(() => {
+  if (observer) {
+    observer.disconnect();
+  }
 });
 </script>
 

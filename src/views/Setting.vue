@@ -89,18 +89,26 @@
             拖拽以排序，开关用以控制在页面中的显示状态
           </n-text>
         </div>
-        <n-popconfirm @positive-click="restoreDefault">
-          <template #trigger>
-            <n-button class="control" size="small"> 恢复默认 </n-button>
-          </template>
-          确认将排序恢复到默认状态？
-        </n-popconfirm>
+        <n-space class="controls" size="small">
+          <n-button class="control" size="small" @click="setAllNewsShow(true)">
+            全选
+          </n-button>
+          <n-button class="control" size="small" @click="setAllNewsShow(false)">
+            全不选
+          </n-button>
+          <n-popconfirm @positive-click="restoreDefault">
+            <template #trigger>
+              <n-button class="control" size="small"> 恢复默认 </n-button>
+            </template>
+            确认将排序恢复到默认状态？
+          </n-popconfirm>
+        </n-space>
       </div>
       <draggable
-        :list="newsArr"
+        v-model="newsArr"
         :animation="200"
         class="mews-group"
-        item-key="order"
+        item-key="name"
         @end="saveSoreData()"
       >
         <template #item="{ element }">
@@ -192,14 +200,24 @@ const themeAutoOpen = (val) => {
   }
 };
 
+// 全选 / 全不选
+const setAllNewsShow = (show) => {
+  newsArr.value = newsArr.value.map((item) => ({
+    ...item,
+    show,
+  }));
+  $message.success(show ? "已开启全部榜单" : "已关闭全部榜单");
+};
+
 // 恢复默认排序
 const restoreDefault = () => {
-  newsArr.value = newsArr.value.sort((a, b) => a.order - b.order);
+  newsArr.value = [...newsArr.value].sort((a, b) => a.order - b.order);
   $message.success("恢复默认榜单排序成功");
 };
 
 // 将排序结果写入
 const saveSoreData = (name = null, open = false) => {
+  newsArr.value = [...newsArr.value];
   $message.success(
     name ? `${name}榜单已${open ? "开启" : "关闭"}` : "榜单排序成功"
   );

@@ -28,6 +28,7 @@ import Header from "@/components/Header.vue";
 import Footer from "@/components/Footer.vue";
 
 const store = mainStore();
+store.checkNewsUpdate();
 
 // 顶栏显隐
 const headerShow = ref(false);
@@ -38,11 +39,10 @@ const backTopChange = (val) => {
 };
 
 onMounted(() => {
-  store.checkNewsUpdate();
   // 写入默认
   nextTick(() => {
     if (store.newsArr.length === 0) {
-      store.newsArr = store.defaultNewsArr;
+      store.newsArr = store.defaultNewsArr.map((item) => ({ ...item }));
     }
   });
 });
