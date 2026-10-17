@@ -48,12 +48,12 @@
           </n-button>
         </div>
         <div v-else-if="!hotListData || listLoading" class="loading">
-          <n-skeleton text round :repeat="10" height="20px" />
+          <n-skeleton text round :repeat="20" height="20px" />
         </div>
         <div v-else class="lists" :id="hotData.name + 'Lists'">
           <div
             class="item"
-            v-for="(item, index) in hotListData.data.slice(0, 15)"
+            v-for="(item, index) in hotListData.data.slice(0, 30)"
             :key="item"
           >
             <n-text
@@ -304,7 +304,7 @@ onMounted(() => {
   }
 
   :deep(.news-list) {
-    height: 300px;
+    height: 600px;
 
     .n-scrollbar-rail {
       right: 0;
@@ -322,7 +322,7 @@ onMounted(() => {
     .loading {
       display: flex;
       flex-direction: column;
-      height: 300px;
+      height: 600px;
       justify-content: space-between;
     }
   }
