@@ -79,7 +79,7 @@
           <stream-article-item
             v-for="(item, index) in displayedArticles"
             :key="item._uniqueKey || `${item._sourceName}-${item.id || index}`"
-            :ref="(el) => setArticleItemRef(el, item._uniqueKey)"
+            :ref="getArticleItemRefSetter(item._uniqueKey)"
             :item="item"
             :index="index"
             :font-size="store.listFontSize"
@@ -143,6 +143,7 @@ const {
   initReadObserver,
   cleanupReadObserver,
   setArticleItemRef,
+  getArticleItemRefSetter,
   loadReadHashesFromBackend,
 } = useStreamReadStatus({
   onReadStatusChange: (uniqueKey, isRead) => {
@@ -220,21 +221,55 @@ const allArticles = computed(() => {
           displayedReadSet.has(uniqueKey) ||
           (newsHash ? displayedReadSet.has(newsHash) : false);
 
+        const scoreStatus = scoreInfo?.status || "idle";
+        const score = hasScore ? scoreInfo.score : undefined;
+        const layer = hasScore ? scoreInfo.layer : undefined;
+        const reason = hasScore ? scoreInfo.reason : undefined;
+        const resolvedHash = newsHash || undefined;
+        const isUserModified = hasScore ? Boolean(scoreInfo.isUserModified) : false;
+        const fromCache = hasScore ? Boolean(scoreInfo.fromCache) : false;
+        const sourceOrder = source.order ?? 0;
+        const currentOriginalIndex = originalIndex++;
+
+        // 复用未发生字段变化的条目对象引用，避免列表每次部分更新导致全部子组件重新渲染
+        const prevObj = articleMetaLookup.get(uniqueKey);
+        if (
+          prevObj &&
+          prevObj._rawItem === item &&
+          prevObj._sourceName === source.name &&
+          prevObj._sourceLabel === source.label &&
+          prevObj._sourceOrder === sourceOrder &&
+          prevObj._indexInSource === index &&
+          prevObj._originalIndex === currentOriginalIndex &&
+          prevObj._scoreStatus === scoreStatus &&
+          prevObj._score === score &&
+          prevObj._layer === layer &&
+          prevObj._reason === reason &&
+          prevObj._newsHash === resolvedHash &&
+          prevObj._isUserModified === isUserModified &&
+          prevObj._fromCache === fromCache &&
+          prevObj._isRead === isRead
+        ) {
+          merged.push(prevObj);
+          return;
+        }
+
         const articleObj = {
           ...item,
+          _rawItem: item,
           _sourceName: source.name,
           _sourceLabel: source.label,
-          _sourceOrder: source.order ?? 0,
+          _sourceOrder: sourceOrder,
           _indexInSource: index,
-          _originalIndex: originalIndex++,
+          _originalIndex: currentOriginalIndex,
           _uniqueKey: uniqueKey,
-          _scoreStatus: scoreInfo?.status || "idle",
-          _score: hasScore ? scoreInfo.score : undefined,
-          _layer: hasScore ? scoreInfo.layer : undefined,
-          _reason: hasScore ? scoreInfo.reason : undefined,
-          _newsHash: newsHash || undefined,
-          _isUserModified: hasScore ? Boolean(scoreInfo.isUserModified) : false,
-          _fromCache: hasScore ? Boolean(scoreInfo.fromCache) : false,
+          _scoreStatus: scoreStatus,
+          _score: score,
+          _layer: layer,
+          _reason: reason,
+          _newsHash: resolvedHash,
+          _isUserModified: isUserModified,
+          _fromCache: fromCache,
           _isRead: isRead,
         };
 
@@ -276,21 +311,34 @@ const displayedArticles = computed(() => {
   return allArticles.value.filter((item) => !item._isRead);
 });
 
-const totalNewsCount = computed(() => allArticles.value.length);
-
-const scoredNewsCount = computed(() => {
-  return allArticles.value.filter((item) => typeof item._score === "number").length;
+// 单次遍历汇总各项计数指标，避免每次渲染重复遍历过滤 4 次全量数组
+const streamStats = computed(() => {
+  const list = allArticles.value;
+  let scored = 0;
+  let cached = 0;
+  let read = 0;
+  for (let i = 0; i < list.length; i++) {
+    const item = list[i];
+    if (typeof item._score === "number") {
+      scored++;
+      if (item._fromCache) cached++;
+    }
+    if (item._isRead) {
+      read++;
+    }
+  }
+  return {
+    total: list.length,
+    scored,
+    cached,
+    read,
+  };
 });
 
-const cachedScoreCount = computed(() => {
-  return allArticles.value.filter(
-    (item) => typeof item._score === "number" && item._fromCache
-  ).length;
-});
-
-const readNewsCount = computed(() => {
-  return allArticles.value.filter((item) => item._isRead).length;
-});
+const totalNewsCount = computed(() => streamStats.value.total);
+const scoredNewsCount = computed(() => streamStats.value.scored);
+const cachedScoreCount = computed(() => streamStats.value.cached);
+const readNewsCount = computed(() => streamStats.value.read);
 
 const hiddenReadCount = computed(() => {
   return Math.max(0, allArticles.value.length - displayedArticles.value.length);

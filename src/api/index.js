@@ -69,6 +69,21 @@ export const scoreNews = (payload, isNew = false) => {
 };
 
 /**
+ * 批量仅查询 SQLite 已缓存的评分（毫秒级返回，不触发 AI 调用）
+ * @param {Array} items 待查询的新闻数组 [{ title, desc, source }]
+ * @returns
+ */
+export const queryCachedScoresBatch = (items = []) => {
+  return axios({
+    method: "POST",
+    url: "/score/cache",
+    timeout: 15000,
+    silentError: true,
+    data: { items },
+  });
+};
+
+/**
  * 提交用户手动修正的新闻评分（存入 SQLite 供将来 AI 自动调整推荐逻辑使用）
  * @param {object|Array} payload 单条修正 { id, newsHash, title, desc, source, userScore, userLayer, userReason, reset } 或批量数组 { items: [...] }
  * @returns

@@ -23,14 +23,31 @@ export function useStreamReadStatus({ onReadStatusChange } = {}) {
   const articleMetaLookup = new Map();
   const pendingReadSyncMap = new Map();
   let readSyncTimer = null;
+  let storeSyncTimer = null;
 
   let readObserver = null;
   const observedElementsMap = new Map();
   const visibilityTimersMap = new Map();
+  const refSetterCache = new Map();
 
-  const syncReadSetToStore = () => {
+  const flushReadSetToStore = () => {
+    if (storeSyncTimer) {
+      clearTimeout(storeSyncTimer);
+      storeSyncTimer = null;
+    }
     const arr = Array.from(persistedReadSet);
     store.readNewsKeys = arr.length > 5000 ? arr.slice(arr.length - 5000) : arr;
+  };
+
+  const syncReadSetToStore = (immediate = false) => {
+    if (immediate) {
+      flushReadSetToStore();
+      return;
+    }
+    if (storeSyncTimer) return;
+    storeSyncTimer = setTimeout(() => {
+      flushReadSetToStore();
+    }, 300);
   };
 
   const flushReadSyncQueue = async () => {
@@ -46,20 +63,28 @@ export function useStreamReadStatus({ onReadStatusChange } = {}) {
     try {
       const res = await markNewsRead({ items: batchItems });
       const savedList = Array.isArray(res?.data) ? res.data : [];
+      let changed = false;
       savedList.forEach((record) => {
         if (record?.newsHash) {
           if (record.isRead) {
-            persistedReadSet.add(record.newsHash);
-            if (!sessionNewlyReadSet.has(record.newsHash)) {
+            if (!persistedReadSet.has(record.newsHash)) {
+              persistedReadSet.add(record.newsHash);
+              changed = true;
+            }
+            if (!sessionNewlyReadSet.has(record.newsHash) && !displayedReadSet.has(record.newsHash)) {
               displayedReadSet.add(record.newsHash);
             }
           } else {
-            persistedReadSet.delete(record.newsHash);
+            if (persistedReadSet.delete(record.newsHash)) {
+              changed = true;
+            }
             displayedReadSet.delete(record.newsHash);
           }
         }
       });
-      syncReadSetToStore();
+      if (changed) {
+        syncReadSetToStore();
+      }
     } catch (err) {
       console.warn("批量同步已读状态到后端失败:", err);
     }
@@ -85,18 +110,24 @@ export function useStreamReadStatus({ onReadStatusChange } = {}) {
 
     if (isRead) {
       // 记录到持久化集合与本次新读集合
-      persistedReadSet.add(uniqueKey);
+      if (!persistedReadSet.has(uniqueKey)) {
+        persistedReadSet.add(uniqueKey);
+      }
       sessionNewlyReadSet.add(uniqueKey);
       if (newsHash) {
-        persistedReadSet.add(newsHash);
+        if (!persistedReadSet.has(newsHash)) {
+          persistedReadSet.add(newsHash);
+        }
         sessionNewlyReadSet.add(newsHash);
       }
 
       // 仅当用户主动显式操作时才在本次会话中立即打标
       // 用户正常阅读（视口停留或点击跳转），不马上打标，等到下一次刷新/打开才打标
       if (fromUserAction) {
-        displayedReadSet.add(uniqueKey);
-        if (newsHash) {
+        if (!displayedReadSet.has(uniqueKey)) {
+          displayedReadSet.add(uniqueKey);
+        }
+        if (newsHash && !displayedReadSet.has(newsHash)) {
           displayedReadSet.add(newsHash);
         }
         onReadStatusChange?.(uniqueKey, true);
@@ -135,33 +166,44 @@ export function useStreamReadStatus({ onReadStatusChange } = {}) {
   // 在重新加载全部信源（页面内刷新）时，将本次会话已读的内容正式并入已读展示集合
   const commitSessionReadToDisplayed = () => {
     sessionNewlyReadSet.forEach((key) => {
-      displayedReadSet.add(key);
+      if (!displayedReadSet.has(key)) {
+        displayedReadSet.add(key);
+      }
     });
     sessionNewlyReadSet.clear();
   };
 
   // 接收 AI 打分返回时附带的历史已读标记
   const handleScoreReadSync = ({ uniqueKey, newsHash, isReadFromDb }) => {
+    let persistedChanged = false;
     if (isReadFromDb) {
-      persistedReadSet.add(uniqueKey);
-      if (newsHash) {
+      if (uniqueKey && !persistedReadSet.has(uniqueKey)) {
+        persistedReadSet.add(uniqueKey);
+        persistedChanged = true;
+      }
+      if (newsHash && !persistedReadSet.has(newsHash)) {
         persistedReadSet.add(newsHash);
+        persistedChanged = true;
       }
       // 如果不是当前会话新读的，说明是历史记录，在当前会话中显示为已读
       if (!sessionNewlyReadSet.has(uniqueKey) && (!newsHash || !sessionNewlyReadSet.has(newsHash))) {
-        displayedReadSet.add(uniqueKey);
-        if (newsHash) {
+        if (uniqueKey && !displayedReadSet.has(uniqueKey)) {
+          displayedReadSet.add(uniqueKey);
+        }
+        if (newsHash && !displayedReadSet.has(newsHash)) {
           displayedReadSet.add(newsHash);
         }
       }
-      syncReadSetToStore();
+      if (persistedChanged) {
+        syncReadSetToStore();
+      }
     } else if (
       persistedReadSet.has(uniqueKey) &&
       newsHash &&
       !persistedReadSet.has(newsHash)
     ) {
       persistedReadSet.add(newsHash);
-      if (displayedReadSet.has(uniqueKey)) {
+      if (displayedReadSet.has(uniqueKey) && !displayedReadSet.has(newsHash)) {
         displayedReadSet.add(newsHash);
       }
       syncReadSetToStore();
@@ -237,6 +279,17 @@ export function useStreamReadStatus({ onReadStatusChange } = {}) {
     }
   };
 
+  // 为每个 uniqueKey 缓存稳定的 ref 绑定函数引用，避免重渲染时 Vue 反复以 null/el 触发 unobserve/observe
+  const getArticleItemRefSetter = (uniqueKey) => {
+    if (!uniqueKey) return undefined;
+    let setter = refSetterCache.get(uniqueKey);
+    if (!setter) {
+      setter = (el) => setArticleItemRef(el, uniqueKey);
+      refSetterCache.set(uniqueKey, setter);
+    }
+    return setter;
+  };
+
   const cleanupReadObserver = () => {
     if (readObserver) {
       readObserver.disconnect();
@@ -245,6 +298,8 @@ export function useStreamReadStatus({ onReadStatusChange } = {}) {
     visibilityTimersMap.forEach((timer) => clearTimeout(timer));
     visibilityTimersMap.clear();
     observedElementsMap.clear();
+    refSetterCache.clear();
+    flushReadSetToStore();
     flushReadSyncQueue();
   };
 
@@ -257,16 +312,22 @@ export function useStreamReadStatus({ onReadStatusChange } = {}) {
           ? res.data
           : [];
       if (hashes.length > 0) {
+        let changed = false;
         hashes.forEach((h) => {
           if (typeof h === "string" && h) {
-            persistedReadSet.add(h);
+            if (!persistedReadSet.has(h)) {
+              persistedReadSet.add(h);
+              changed = true;
+            }
             // 只要不是本次会话新加入的，即视为历史已读并呈现在当前页面
-            if (!sessionNewlyReadSet.has(h)) {
+            if (!sessionNewlyReadSet.has(h) && !displayedReadSet.has(h)) {
               displayedReadSet.add(h);
             }
           }
         });
-        syncReadSetToStore();
+        if (changed) {
+          syncReadSetToStore();
+        }
       }
     } catch (err) {
       console.warn("同步后端已读记录失败:", err);
@@ -287,6 +348,7 @@ export function useStreamReadStatus({ onReadStatusChange } = {}) {
     initReadObserver,
     cleanupReadObserver,
     setArticleItemRef,
+    getArticleItemRefSetter,
     loadReadHashesFromBackend,
   };
 }
