@@ -21,8 +21,8 @@ export const mainStore = defineStore("mainData", {
           show: true,
         },
         {
-          label: "知乎",
-          name: "zhihu",
+          label: "快手",
+          name: "kuaishou",
           order: 2,
           show: true,
         },
@@ -92,6 +92,18 @@ export const mainStore = defineStore("mainData", {
           order: 13,
           show: true,
         },
+        {
+          label: "GitHub",
+          name: "github",
+          order: 14,
+          show: true,
+        },
+        {
+          label: "V2EX",
+          name: "v2ex",
+          order: 15,
+          show: true,
+        },
       ],
       newsArr: [],
       // 链接跳转方式
@@ -128,14 +140,18 @@ export const mainStore = defineStore("mainData", {
         );
         for (const newItem of this.defaultNewsArr) {
           const exists = this.newsArr.some(
-            (news) => newItem.label === news.label && newItem.name === news.name
+            (news) => newItem.name === news.name
           );
           if (!exists) {
             console.log("列表有更新：", newItem);
             updatedNum++;
-            this.newsArr.push(newItem);
+            this.newsArr.push({ ...newItem, show: true });
           }
         }
+        // 确保所有信源在前端打开展示
+        this.newsArr.forEach((item) => {
+          item.show = true;
+        });
         if (updatedNum) $message.success(`成功更新 ${updatedNum} 个榜单数据`);
       } else {
         console.log("列表无内容，写入默认");
