@@ -204,6 +204,10 @@ export const mainStore = defineStore("mainData", {
       timeData: null,
       // 字体大小
       listFontSize: 16,
+      // 信息流是否隐藏已看过的内容
+      hideReadNews: false,
+      // 本地持久化的已读新闻标识集合（存 uniqueKey / newsHash）
+      readNewsKeys: [],
     };
   },
   getters: {},
@@ -276,6 +280,8 @@ export const mainStore = defineStore("mainData", {
         "linkOpenType",
         "headerFixed",
         "listFontSize",
+        "hideReadNews",
+        "readNewsKeys",
       ],
     },
   ],

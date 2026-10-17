@@ -94,4 +94,28 @@ export const getScoreRecords = (params = {}) => {
   });
 };
 
+/**
+ * 标记或更新单条/批量新闻的已读状态（持久化存入 SQLite）
+ * @param {object|Array} payload 单条 { newsHash, title, desc, source, url, isRead } 或批量数组 { items: [...], isRead }
+ * @returns
+ */
+export const markNewsRead = (payload) => {
+  return axios({
+    method: "POST",
+    url: "/score/read",
+    data: Array.isArray(payload) ? { items: payload } : payload,
+  });
+};
 
+/**
+ * 获取后端 SQLite 中已标记为已读的新闻哈希列表
+ * @param {number} limit
+ * @returns
+ */
+export const getReadNewsHashes = (limit = 5000) => {
+  return axios({
+    method: "GET",
+    url: "/score/read",
+    params: { limit },
+  });
+};
