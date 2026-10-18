@@ -1,24 +1,14 @@
 <template>
   <div class="page-header">
     <div class="left">
-      <n-button secondary strong round @click="router.push('/')">
-        <template #icon>
-          <n-icon :component="ArrowLeft" />
-        </template>
-        返回首页
-      </n-button>
-      <div class="title-info">
-        <n-text class="main-title">全网聚合信息流</n-text>
-        <n-text :depth="3" class="sub-title">
-          已评分按分数降序 · 未评分按原序排列 · 共 {{ sourceCount }} 个信源 · {{ totalNewsCount }} 条内容（已评分
-          {{ scoredNewsCount }}/{{ totalNewsCount }}
-          <template v-if="cachedScoreCount > 0"> · 缓存命中 {{ cachedScoreCount }} 条</template>
-          <template v-if="readNewsCount > 0"> · 已读 {{ readNewsCount }} 条</template>
-          <template v-if="store.hideReadNews && hiddenReadCount > 0">
-            · 已隐藏 {{ hiddenReadCount }} 条
-          </template>）
-        </n-text>
+      <div class="logo-area" @click="router.push('/')">
+        <img src="/ico/favicon.png" alt="logo" class="site-logo" />
+        <div class="logo-text">
+          <n-text class="main-title">今日热榜</n-text>
+          <n-text :depth="3" class="sub-title">全网实时情报中枢</n-text>
+        </div>
       </div>
+      <StreamClock />
     </div>
     <div class="right">
       <n-space align="center">
@@ -55,14 +45,45 @@
           </template>
           重新加载全部
         </n-button>
+        <n-popover>
+          <template #trigger>
+            <n-button
+              secondary
+              strong
+              round
+              @click="
+                store.setSiteTheme(
+                  store.siteTheme === 'light' ? 'dark' : 'light'
+                )
+              "
+            >
+              <template #icon>
+                <n-icon
+                  :component="store.siteTheme === 'light' ? Moon : SunOne"
+                />
+              </template>
+            </n-button>
+          </template>
+          {{ store.siteTheme === "light" ? "深色模式" : "浅色模式" }}
+        </n-popover>
+        <n-popover>
+          <template #trigger>
+            <n-button secondary strong round @click="router.push('/setting')">
+              <template #icon>
+                <n-icon :component="SettingTwo" />
+              </template>
+            </n-button>
+          </template>
+          全局设置
+        </n-popover>
       </n-space>
     </div>
   </div>
 </template>
 
 <script setup>
-import { useRouter } from "vue-router";
-import { ArrowLeft, Refresh } from "@icon-park/vue-next";
+import { Refresh, SunOne, Moon, SettingTwo } from "@icon-park/vue-next";
+import StreamClock from "@/components/Stream/StreamClock.vue";
 import { mainStore } from "@/store";
 
 const router = useRouter();
@@ -132,18 +153,40 @@ defineEmits(["reload"]);
     gap: 16px;
     flex-wrap: wrap;
 
-    .title-info {
+    .logo-area {
       display: flex;
-      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+      transition: opacity 0.2s;
 
-      .main-title {
-        font-size: 20px;
-        font-weight: bold;
+      &:hover {
+        opacity: 0.85;
       }
 
-      .sub-title {
-        font-size: 13px;
-        margin-top: 2px;
+      .site-logo {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        object-fit: cover;
+      }
+
+      .logo-text {
+        display: flex;
+        flex-direction: column;
+
+        .main-title {
+          font-size: 18px;
+          font-weight: bold;
+          line-height: 1.2;
+        }
+
+        .sub-title {
+          font-size: 11px;
+          line-height: 1.2;
+          margin-top: 2px;
+        }
       }
     }
   }

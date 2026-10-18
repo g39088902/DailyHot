@@ -3,10 +3,10 @@
     <n-layout
       embedded
       :native-scrollbar="false"
-      :class="store.headerFixed ? 'fixed' : null"
+      :class="[store.headerFixed ? 'fixed' : null, isStreamPage ? 'stream-layout' : null]"
     >
       <n-back-top :visibility-height="2" @update:show="backTopChange" />
-      <Header :class="headerShow ? 'show' : null" />
+      <Header v-if="!isStreamPage" :class="headerShow ? 'show' : null" />
       <main>
         <router-view v-slot="{ Component }">
           <keep-alive>
@@ -22,13 +22,17 @@
 </template>
 
 <script setup>
+import { useRoute } from "vue-router";
 import { mainStore } from "@/store";
 import Provider from "@/components/Provider.vue";
 import Header from "@/components/Header.vue";
 import Footer from "@/components/Footer.vue";
 
+const route = useRoute();
 const store = mainStore();
 store.checkNewsUpdate();
+
+const isStreamPage = computed(() => route.path === "/stream" || route.path === "/");
 
 // 顶栏显隐
 const headerShow = ref(false);
@@ -83,6 +87,13 @@ onMounted(() => {
     }
     main {
       padding: 118px 5vw 0 5vw;
+    }
+  }
+  &.stream-layout,
+  &.fixed.stream-layout {
+    main {
+      padding: 24px 5vw 0 5vw;
+      min-height: calc(100vh - 120px);
     }
   }
   :deep(.n-scrollbar-rail) {

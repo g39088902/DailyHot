@@ -8,20 +8,8 @@
           <n-text :depth="3">汇聚全网热点，热门尽览无余</n-text>
         </div>
       </div>
-      <div class="current-time" v-if="store.timeData">
-        <n-text class="time">{{ store.timeData.time.text }}</n-text>
-        <n-text class="date" :depth="3">
-          {{
-            store.timeData.lunar.GanZhiYear +
-            "年 " +
-            store.timeData.lunar.text +
-            " " +
-            store.timeData.time.weekday
-          }}
-        </n-text>
-      </div>
-      <div class="current-time" v-else>
-        <n-text class="time">时间获取中</n-text>
+      <div class="current-time">
+        <StreamClock />
       </div>
       <div class="controls">
         <n-space justify="end">
@@ -62,14 +50,14 @@
                 secondary
                 strong
                 round
-                @click="router.push('/stream')"
+                @click="router.push('/')"
               >
                 <template #icon>
                   <n-icon :component="ViewList" />
                 </template>
               </n-button>
             </template>
-            全网聚合
+            聚合首页
           </n-popover>
           <n-popover>
             <template #trigger>
@@ -111,6 +99,7 @@ import {
   HamburgerButton,
   ViewList,
 } from "@icon-park/vue-next";
+import StreamClock from "@/components/Stream/StreamClock.vue";
 import { getCurrentTime } from "@/utils/getTime.js";
 import { mainStore } from "@/store";
 import { NText, NIcon } from "naive-ui";
@@ -128,31 +117,12 @@ const timeRender = () => {
     {
       style: {
         display: "flex",
-        flexDirection: "column",
+        justifyContent: "center",
         alignItems: "center",
-        padding: "6px 18px",
+        padding: "8px 12px",
       },
     },
-    [
-      h(NText, null, {
-        default: () =>
-          store.timeData ? store.timeData.time.text : "时间获取失败",
-      }),
-      h(
-        NText,
-        { depth: 3, style: "font-size: 12px" },
-        {
-          default: () =>
-            store.timeData
-              ? store.timeData.lunar.GanZhiYear +
-                "年 " +
-                store.timeData.lunar.text +
-                " " +
-                store.timeData.time.weekday
-              : "日期获取失败",
-        }
-      ),
-    ]
+    [h(StreamClock, { compact: true })]
   );
 };
 
@@ -216,7 +186,7 @@ const menuOptionsSelect = (val) => {
   } else if (val === "changeTheme") {
     store.setSiteTheme(store.siteTheme === "light" ? "dark" : "light");
   } else if (val === "stream") {
-    router.push("/stream");
+    router.push("/");
   } else if (val === "setting") {
     router.push("/setting");
   }
@@ -291,11 +261,9 @@ onBeforeUnmount(() => {
     }
     .current-time {
       display: flex;
-      flex-direction: column;
+      justify-content: center;
       align-items: center;
-      .date {
-        font-size: 12px;
-      }
+      transition: all 0.3s;
     }
     .mobile {
       display: none;

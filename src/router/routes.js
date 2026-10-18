@@ -1,12 +1,17 @@
 const routes = [
-  // 首页
+  // 首页 (全网聚合流式视图)
   {
     path: "/",
     name: "home",
     meta: {
       title: "首页",
     },
-    component: () => import("@/views/Home.vue"),
+    component: () => import("@/views/Stream.vue"),
+  },
+  // 聚合总览 (重定向至首页)
+  {
+    path: "/stream",
+    redirect: "/",
   },
   // 新闻列表
   {
@@ -16,15 +21,6 @@ const routes = [
       title: "新闻列表",
     },
     component: () => import("@/views/List.vue"),
-  },
-  // 聚合总览
-  {
-    path: "/stream",
-    name: "stream",
-    meta: {
-      title: "全网聚合",
-    },
-    component: () => import("@/views/Stream.vue"),
   },
   // 设置页
   {
