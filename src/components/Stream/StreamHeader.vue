@@ -82,6 +82,7 @@
 </template>
 
 <script setup>
+import { useRouter } from "vue-router";
 import { Refresh, SunOne, Moon, SettingTwo } from "@icon-park/vue-next";
 import StreamClock from "@/components/Stream/StreamClock.vue";
 import { mainStore } from "@/store";
